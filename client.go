@@ -547,7 +547,7 @@ func DropAllIndex(c *Client, collName string, opts ...*options.DropIndexesOption
 }
 
 // JoinMany alow waiting for seceral channels. the result of this method are channels that needs to be drained
-func JoinMany[T any](sourceChans ...chan T) []T {
+func JoinMany[T GenericResult](sourceChans ...chan T) []T {
 	var ret = make([]T, len(sourceChans))
 	for i := 0; i < len(sourceChans); i++ {
 		ret[i] = <-sourceChans[i]
