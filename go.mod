@@ -1,4 +1,4 @@
-module github.com/sagiforbes/gomo
+module github.com/sagiforbes/gomongo
 
 go 1.22.2
 
