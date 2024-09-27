@@ -5,9 +5,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type GenericResult interface {
-}
-
 type ReadOneResult[T any] struct {
 	Found    bool
 	Document T

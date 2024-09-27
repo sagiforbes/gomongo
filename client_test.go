@@ -130,24 +130,6 @@ func testFindMany(t *testing.T) {
 		}
 	}
 
-	t.Log("now checking multiple async version")
-	manyChan := make([]chan ReadManyResult[Restaurant], 3)
-	manyChan[0] = Find[Restaurant](client, COLL_NAME_RESTAURANT, bson.M{"name": "restorant 1"})
-	manyChan[1] = Find[Restaurant](client, COLL_NAME_RESTAURANT, bson.M{"name": "restorant 2"})
-	manyChan[2] = Find[Restaurant](client, COLL_NAME_RESTAURANT, bson.M{"name": "restorant 3"})
-
-	manyRes := JoinMany[ReadManyResult[Restaurant]](manyChan...)
-	errCount := 0
-	for i, res := range manyRes {
-		if res.Err != nil {
-			t.Errorf("failed on request %d: %s", i, res.Err.Error())
-			errCount++
-		}
-	}
-	if errCount == 0 {
-		t.Log("no error at multiple find")
-	}
-
 }
 
 func testFindStream(t *testing.T) {
