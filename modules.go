@@ -1,4 +1,4 @@
-package gomo
+package gomongo
 
 import (
 	"go.mongodb.org/mongo-driver/bson"

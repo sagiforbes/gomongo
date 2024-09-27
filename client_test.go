@@ -1,4 +1,4 @@
-package gomo
+package gomongo
 
 import (
 	"errors"
