@@ -10,6 +10,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+func toInterfaceArr[T any](arr []T) []interface{} {
+	ret := make([]interface{}, len(arr))
+	for i, e := range arr {
+		ret[i] = e
+	}
+	return ret
+}
+
 type Client struct {
 	host              string
 	database          string
@@ -63,7 +71,10 @@ func (c *Client) Ping() bool {
 ****************************************************************************************************************
 ******************************************************************************************************************
 */
-func InsertManySync(c *Client, collName string, documents []interface{}, opts ...*options.InsertManyOptions) WriteManyResult {
+func InsertManySync[T any](c *Client, collName string, documents []T, opts ...*options.InsertManyOptions) WriteManyResult {
+
+	intrArr := toInterfaceArr(documents)
+
 	coll, err := c.coll(collName)
 	if err != nil {
 		return WriteManyResult{Err: NewError(MsgGomongoConnectionError, err)}
@@ -72,7 +83,7 @@ func InsertManySync(c *Client, collName string, documents []interface{}, opts ..
 	ctx, cancel := c.ctx()
 	defer cancel()
 
-	insertRes, err := coll.InsertMany(ctx, documents, opts...)
+	insertRes, err := coll.InsertMany(ctx, intrArr, opts...)
 	if err != nil {
 		return WriteManyResult{Err: NewError(MsgGomongoInsertManyError, err), DbRes: *insertRes}
 	}
@@ -399,7 +410,7 @@ func ListIndexSync(c *Client, collName string, opts ...*options.ListIndexesOptio
 */
 
 // InsertMany insert many document in async way
-func InsertMany(c *Client, collName string, documents []interface{}, opts ...*options.InsertManyOptions) chan WriteManyResult {
+func InsertMany[T any](c *Client, collName string, documents []T, opts ...*options.InsertManyOptions) chan WriteManyResult {
 	ret := make(chan WriteManyResult, 1)
 	go func() {
 		ret <- InsertManySync(c, collName, documents, opts...)
