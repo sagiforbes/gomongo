@@ -85,9 +85,9 @@ func InsertManySync[T any](c *Client, collName string, documents []T, opts ...*o
 
 	insertRes, err := coll.InsertMany(ctx, intrArr, opts...)
 	if err != nil {
-		return WriteManyResult{Err: NewError(MsgGomongoInsertManyError, err), DbRes: *insertRes}
+		return WriteManyResult{Err: NewError(MsgGomongoInsertManyError, err), DbRes: insertRes}
 	}
-	return WriteManyResult{Err: nil, DbRes: *insertRes}
+	return WriteManyResult{Err: nil, DbRes: insertRes}
 }
 
 // InsertOneSync insert one document to collection.

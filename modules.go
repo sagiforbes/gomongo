@@ -28,7 +28,7 @@ type DistinctResult[T any] struct {
 }
 
 type WriteManyResult struct {
-	DbRes mongo.InsertManyResult
+	DbRes *mongo.InsertManyResult
 	Err   error
 }
 
