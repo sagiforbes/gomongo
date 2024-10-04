@@ -141,6 +141,22 @@ func UpdateManySync(c *Client, collName string, filter interface{}, instruction 
 	return UpdateResult{Err: nil, DbRes: dbUpdateRes}
 }
 
+func BulkWriteSync(c *Client, collName string, writeModels []mongo.WriteModel, opts ...*options.BulkWriteOptions) BulkWriteResult {
+	coll, err := c.coll(collName)
+	if err != nil {
+		return BulkWriteResult{Err: NewError(MsgGomongoConnectionError, err)}
+	}
+	ctx, cancel := c.ctx()
+	defer cancel()
+
+	db_res, err := coll.BulkWrite(ctx, writeModels, opts...)
+	if err != nil {
+		return BulkWriteResult{Err: NewError("failed on bulk write", err)}
+	}
+	return BulkWriteResult{DbRes: db_res}
+
+}
+
 func ReplaceOneSync(c *Client, collName string, filter interface{}, document interface{}, opts ...*options.ReplaceOptions) UpdateResult {
 	coll, err := c.coll(collName)
 	if err != nil {
@@ -210,6 +226,25 @@ func FindSync[T any](c *Client, collName string, filter interface{}, opts ...*op
 
 	return ReadManyResult[T]{Documents: resultDocs, Err: nil}
 
+}
+
+func DistinctSync[T any](c *Client, collName string, fieldName string, filter interface{}, opts ...*options.DistinctOptions) DistinctResult[T] {
+	coll, err := c.coll(collName)
+	if err != nil {
+		return DistinctResult[T]{Err: NewError(MsgGomongoConnectionError, err)}
+	}
+
+	ctx, cancel := c.ctx()
+	defer cancel()
+	values, err := coll.Distinct(ctx, fieldName, filter, opts...)
+	if err != nil {
+		return DistinctResult[T]{Err: NewError(MsgGomongoFetchError, err)}
+	}
+	ret_vals := make([]T, len(values))
+	for i, v := range values {
+		ret_vals[i] = v.(T)
+	}
+	return DistinctResult[T]{Values: ret_vals}
 }
 
 func FindStreamSync[T any](c *Client, collName string, filter interface{}, opts ...*options.FindOptions) ReadStreamResult[T] {
@@ -448,6 +483,15 @@ func UpdateMany(c *Client, collName string, filter interface{}, instruction inte
 	return ret
 }
 
+func BulkWrite(c *Client, collName string, writeModels []mongo.WriteModel, opts ...*options.BulkWriteOptions) chan BulkWriteResult {
+	ret := make(chan BulkWriteResult, 1)
+	go func() {
+		ret <- BulkWriteSync(c, collName, writeModels, opts...)
+		close(ret)
+	}()
+	return ret
+}
+
 // Update update a single document in an async way
 func ReplaceOne(c *Client, collName string, filter interface{}, document interface{}, opts ...*options.ReplaceOptions) chan UpdateResult {
 	ret := make(chan UpdateResult, 1)
@@ -473,6 +517,16 @@ func Find[T any](c *Client, collName string, filter interface{}, opts ...*option
 	ret := make(chan ReadManyResult[T], 1)
 	go func() {
 		ret <- FindSync[T](c, collName, filter, opts...)
+		close(ret)
+	}()
+	return ret
+}
+
+// Distinct query for documents in async way
+func Distinct[T any](c *Client, collName string, fieldName string, filter interface{}, opts ...*options.DistinctOptions) chan DistinctResult[T] {
+	ret := make(chan DistinctResult[T], 1)
+	go func() {
+		ret <- DistinctSync[T](c, collName, fieldName, filter, opts...)
 		close(ret)
 	}()
 	return ret

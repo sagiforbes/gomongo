@@ -22,6 +22,11 @@ type ReadStreamResult[T any] struct {
 	Err            error
 }
 
+type DistinctResult[T any] struct {
+	Values []T
+	Err    error
+}
+
 type WriteManyResult struct {
 	DbRes mongo.InsertManyResult
 	Err   error
@@ -35,6 +40,11 @@ type WriteOneResult struct {
 type UpdateResult struct {
 	DbRes *mongo.UpdateResult
 	Err   error
+}
+
+type BulkWriteResult struct {
+	Err   error
+	DbRes *mongo.BulkWriteResult
 }
 
 type DeleteResult struct {

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type Course struct {
@@ -172,6 +173,14 @@ func testFindStream(t *testing.T) {
 
 }
 
+func testDistinct(t *testing.T) {
+	res := DistinctSync[string](client, COLL_NAME_RESTAURANT, "name", bson.M{})
+	if res.Err != nil {
+		t.Error(res.Err)
+	}
+	t.Log(res.Values)
+}
+
 func testNotFindOne(t *testing.T) {
 	res := FindOneSync[Restaurant](client, COLL_NAME_RESTAURANT, bson.M{"name": "not found restorant name"}, nil)
 	if res.Err != nil {
@@ -262,12 +271,46 @@ func testUpdateDocument(t *testing.T) {
 
 }
 
+func testBulkWrite(t *testing.T) {
+	newRestaurants := []interface{}{
+		Restaurant{Name: "restorant 1", Cuisine: "cuise 1"},
+		Restaurant{Name: "restorant 2", Cuisine: "cuise 2"},
+		Restaurant{Name: "restorant 3", Cuisine: "cuise 3"},
+	}
+	resInst := InsertManySync(client, COLL_NAME_RESTAURANT, newRestaurants)
+	if resInst.Err != nil {
+		t.Errorf("%s", resInst.Err)
+	}
+
+	var new_values [3]string
+	for i := range new_values {
+		new_values[i] = fmt.Sprintf("cuise change by update %d", time.Now().UnixMilli())
+	}
+	var update_models []mongo.WriteModel
+
+	for i := range new_values {
+		uom := mongo.NewUpdateOneModel().SetFilter(bson.M{"name": fmt.Sprintf("restorant %d", i+1)}).SetUpdate(bson.M{"$set": bson.M{"cuisine": new_values[i]}})
+		update_models = append(update_models, uom)
+	}
+
+	res := BulkWriteSync(client, COLL_NAME_RESTAURANT, update_models)
+	if res.Err != nil {
+		t.Error(res.Err)
+	}
+	if res.DbRes.ModifiedCount != int64(len(new_values)) {
+		t.Errorf("updated %d while expected %d", res.DbRes.ModifiedCount, len(new_values))
+	}
+
+}
+
 func TestGomongoWrite(t *testing.T) {
 	t.Run("insert many", testInsertMany)
 
 	t.Run("insert one", testInsertOne)
 
 	t.Run("update", testUpdateDocument)
+
+	t.Run("bulk write", testBulkWrite)
 }
 
 func TestGomongoRead(t *testing.T) {
@@ -278,6 +321,8 @@ func TestGomongoRead(t *testing.T) {
 	t.Run("find many", testFindMany)
 
 	t.Run("find stream", testFindStream)
+
+	t.Run("distinct", testDistinct)
 }
 
 func TestGomongoDelete(t *testing.T) {
@@ -320,13 +365,11 @@ func bmInsertManyAsync(b *testing.B) {
 	}
 	b.Log("Async operaions")
 	b.ResetTimer()
-	resch := InsertMany(client, COLL_NAME_RESTAURANT, newRestaurants)
-	aRes := JoinMany[WriteManyResult](resch)
-	for i, dbRes := range aRes {
-		if dbRes.Err != nil {
-			b.Errorf("failed to insert index %d. err: %s", i, dbRes.Err)
-		}
+	resch := <-InsertMany(client, COLL_NAME_RESTAURANT, newRestaurants)
+	if resch.Err != nil {
+		b.Errorf("failed to insert many")
 	}
+
 	b.Log("Done waiting for all async")
 }
 
