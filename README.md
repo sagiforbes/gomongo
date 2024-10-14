@@ -30,11 +30,34 @@ func main(){
 
 ```
 
-gmc can beused with all gomongo functions
+`gmc` can be used with all gomongo functions. 
+`my_database` is the name of the database you want to use.
+`60*time.Seconds` the timeout of all mongo related functions.
+
+## Data structurs
+
+Throughout these examples we use two structs: user, address. Their definitions are:
+
+```go
+type User struct {
+	Id     string `bson:"id" json:"id"`
+	Name   string `bson:"name" json:"name"`
+	Last   string `bson:"last" json:"last"`
+	Mobile string `bson:"mobile" json:"mobile"`
+}
+
+type Address struct {
+	UserId string `bson:"userId" json:"userId"`
+	Addr   string `bson:"addr" json:"addr"`
+}
+
+```
+
+
 
 ## Insert new records
 
-These are example to async insert records to the database
+Follow are example to async insertion of records to the database
 
 ```go
 
@@ -63,29 +86,11 @@ func InsertMany(gmc *gomongo.Client) error {
 
 ```
 
-gmc was created in previouse example. Here we insert two documents to two different collections
+`gmc` was created in previouse example and passed as a parameter. Here we insert two documents to two different collections
 
 As you can see we use the sync version of the methods: (InsertManySync).
 
-In the following example I used two structs: user, address. There definitions are:
-
-```go
-type User struct {
-	Id     string `bson:"id" json:"id"`
-	Name   string `bson:"name" json:"name"`
-	Last   string `bson:"last" json:"last"`
-	Mobile string `bson:"mobile" json:"mobile"`
-}
-
-type Address struct {
-	UserId string `bson:"userId" json:"userId"`
-	Addr   string `bson:"addr" json:"addr"`
-}
-
-```
-
-
-If you wanted to start inserting the documents but check only after both insert command had started, you can use the go routing that returns a channel of the result, like this:
+If you wanted to start inserting the documents in parallel and check the result at the end, we could use the go version function, like this:
 
 ```go
 
@@ -104,8 +109,8 @@ func InsertMany(gmc *gomongo.Client) error {
 	
 	insert_addr_ch := gomongo.InsertMany(gmc, "address", user_addr)
 	
-  insert_user_res:=<-insert_user_ch
-  insert_addr_res:=<-insert_addr_ch
+  insert_user_res := <-insert_user_ch
+  insert_addr_res := <-insert_addr_ch
 
   if insert_user_res.Err!=nil{
     fmt.Errorf("failed to insert to users collection %v",insert_user_res.Err)
@@ -120,15 +125,29 @@ func InsertMany(gmc *gomongo.Client) error {
 
 ```
 
-Note that in this example we use the go routing version of InsertMany (no sync endien). This means that the first call to insert, for users collection, is not blocked and imidietly we request to insert docuemnts to address collections.
+Note that in this example we use the go routing version of `InsertMany` (no sync endien). 
 
-Only after we called the InsertMany command, we check the result of the operation.
+This means that we first insert to `users` collection and immediatly insert docuemnts to `address` collections.
 
+Only after we inserted all the documents we check the result of the operation. that is done by the opperation:
+
+```go
+
+insert_user_res:=<-insert_user_ch
+insert_addr_res:=<-insert_addr_ch
+
+```
+
+Here we drain the channels and check the result of the operation
 
 ## Search for document
 
 The advatage of using the go routing version is more apparent when we search for documents. 
-Say we want to fetch the user with the address info. we need to make two calls to mongo. first call to fetch the user info and another to fetch the address. We can do this in parallel by using the go function of findOne
+
+Say we want to fetch a `user` along with his `address`. we need to make two calls to mongo. 
+
+first call to fetch the user info and another to fetch the address. 
+We can do this in parallel by using the go function of findOne
 
 ```go
 import 	"go.mongodb.org/mongo-driver/bson"
