@@ -5,7 +5,7 @@ Each mongo function can be executed as sync or go function. In case you are usin
 
 # Installing
 use the following command to add gomongo to your project
-``` bash
+```bash
 
 go get github.com/sagiforbes/gomongo
 
@@ -17,8 +17,13 @@ go get github.com/sagiforbes/gomongo
 
 You start by creating a client struct to be used by all gomongo functions. In this example we run mongo as a single node on localhost. To get a client run
 
-``` go
+```go
+import "github.com/sagiforbes/gomongo"
 
+func main(){
+  mongo_host="mongodb://127.0.0.1"
+  var dbc = gomongo.NewClient(mongo_host, "my_database", 60*time.Second)
+}
 
 
 ```
