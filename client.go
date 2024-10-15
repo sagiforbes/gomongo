@@ -2,7 +2,6 @@ package gomongo
 
 import (
 	"context"
-	"log"
 	"math"
 	"time"
 
@@ -268,7 +267,6 @@ func FindStreamSync[T any](c *Client, collName string, filter interface{}, opts 
 		}
 
 	}
-	log.Default().Printf("at find stream, using channel batch size %d\n", channel_buffer_size)
 	docCh := make(chan ReadOneResult[T], channel_buffer_size)
 	ret := ReadStreamResult[T]{DocumentStream: docCh}
 	go func() {
